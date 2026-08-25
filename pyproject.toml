@@ -7,7 +7,10 @@ authors = [
     { name = "arman0824", email = "armanushendrapratapsingh@gmail.com" }
 ]
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "google-genai==1.21.1",
+    "python-dotenv==1.1.0",
+]
 
 [project.scripts]
 bogagent = "bogagent:main"

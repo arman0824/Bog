@@ -1,1 +1,3 @@
-Bog.code-workspace
+BogAgent.code-workspace
+.venv
+.env
