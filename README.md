@@ -51,3 +51,22 @@ uv run main.py "your prompt here" --verbose
 - `main.py` — entry point, agent loop, and message history management
 - `call_function.py` — dispatches model tool calls to the correct function
 - `functions/` — tool implementations (`get_files_info`, `get_file_content`, `run_python_file`, `write_file`) and their Gemini function schemas
+
+## Try It: End-to-End Agent Workflow
+
+The `runtime_test/` folder contains a `calculator` subfolder with a small sample program you can use to see the full agent loop in action.
+
+1. Open one of the files in `runtime_test/calculator/` and break the code.
+2. Run the agent and let it diagnose and fix the issue:
+
+   ```
+   uv run main.py "fix the calculator for me"
+   ```
+
+3. Use `--verbose` to watch each tool call and token usage:
+
+   ```
+   uv run main.py "fix the calculator for me" --verbose
+   ```
+
+The agent will list the directory, read files, run the tests, edit the broken code, and re-run the tests to confirm the fix — all without any further input.
