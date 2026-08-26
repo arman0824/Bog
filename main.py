@@ -3,10 +3,16 @@ import sys
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
-from functions.get_files_info import get_files_info, schema_get_files_info
-from functions.get_file_content import get_file_content, schema_get_file_content
-from functions.run_python_file import run_python_file, schema_run_python_file
-from functions.write_file import write_file, schema_write_file
+
+from call_function import call_function
+from functions.get_files_info import schema_get_files_info
+from functions.get_file_content import schema_get_file_content
+from functions.run_python_file import schema_run_python_file
+from functions.write_file import schema_write_file
+
+
+MAX_ITERATIONS = 20
+
 
 def main():
     load_dotenv()
@@ -29,6 +35,7 @@ def main():
     if len(sys.argv) < 2:
         print("I need a prompt")
         sys.exit(1)
+
     prompt = sys.argv[1]
 
     verbose_flag = False
@@ -49,44 +56,55 @@ def main():
     )
 
     config = types.GenerateContentConfig(
-        tools=[available_functions], system_instruction=system_prompt
+        tools=[available_functions],
+        system_instruction=system_prompt,
     )
 
-    response = client.models.generate_content(
-        model="gemini-3.5-flash-lite",
-        contents=messages,
-        config=config,
-    )
+    final_response = None
 
-    if response is None or response.usage_metadata is None:
-        print("Response is malformed")
-        return
+    for iteration in range(MAX_ITERATIONS):
+        response = client.models.generate_content(
+            model="gemini-3.5-flash",
+            contents=messages,
+            config=config,
+        )
 
-    if verbose_flag:
-        print(f"User prompt: {prompt}")
-        print(f"Response metadata: {response.usage_metadata.prompt_token_count}")
-        print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
+        if response is None or response.usage_metadata is None:
+            print("Response is malformed")
+            return
 
-    function_map = {
-        "get_files_info": get_files_info,
-        "get_file_content": get_file_content,
-        "run_python_file": run_python_file,
-        "write_file": write_file,
-    }
+        if verbose_flag:
+            print(f"User prompt: {prompt}")
+            print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
+            print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
 
-    if response.function_calls:
-        for function_call_part in response.function_calls:
-            print(f"Calling function: {function_call_part.name}({function_call_part.args})")
-            function = function_map.get(function_call_part.name)
-            if function is None:
-                print(f"Unknown function: {function_call_part.name}")
-                continue
-            result = function(".", **function_call_part.args)
-            print(result)
-    else:
-        print(response.text)
+        if not response.function_calls:
+            final_response = response.text
+            break
 
-    
+        assistant_content = response.candidates[0].content
+        messages.append(assistant_content)
+
+        for tool_call in response.function_calls:
+            try:
+                function_response = call_function(tool_call, verbose=verbose_flag)
+            except Exception as e:
+                raise RuntimeError(
+                    f"call_function failed at iteration {iteration} for "
+                    f"{getattr(tool_call, 'name', '?')}: {e}"
+                )
+
+            if not function_response.parts or not function_response.parts[0].function_response.response.get("result"):
+                raise RuntimeError(f"Empty function response from {getattr(tool_call, 'name', '?')}")
+
+            messages.append(function_response)
+
+    if final_response is None:
+        print(f"Max iterations ({MAX_ITERATIONS}) reached without a final response. Exiting.")
+        sys.exit(1)
+
+    print("Final response:")
+    print(final_response)
 
 
 main()
