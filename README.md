@@ -32,6 +32,8 @@ A command-line AI coding agent which can we run via Google's API key. Bog can au
    uv sync
    ```
 
+4. Change Gemini model from config.py
+
 ## Usage
 
 ```
