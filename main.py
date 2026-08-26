@@ -3,8 +3,10 @@ import sys
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
-from functions.get_files_info import get_files_info
-from functions.get_files_info import schema_get_files_info
+from functions.get_files_info import get_files_info, schema_get_files_info
+from functions.get_file_content import get_file_content, schema_get_file_content
+from functions.run_python_file import run_python_file, schema_run_python_file
+from functions.write_file import write_file, schema_write_file
 
 def main():
     load_dotenv()
@@ -17,6 +19,9 @@ def main():
     When a user asks a question or makes a request, make a function call plan. You can perform the following operations:
 
     - List files and directories
+    - Read file contents
+    - Execute Python files
+    - Write or overwrite files
 
     All paths you provide should be relative to the working directory. You do not need to specify the working directory in your function calls as it is automatically injected for security reasons.
     """
@@ -36,7 +41,10 @@ def main():
 
     available_functions = types.Tool(
         function_declarations=[
-            schema_get_files_info
+            schema_get_files_info,
+            schema_get_file_content,
+            schema_run_python_file,
+            schema_write_file,
         ]
     )
 
@@ -59,11 +67,46 @@ def main():
         print(f"Response metadata: {response.usage_metadata.prompt_token_count}")
         print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
 
-    if response.function_calls:
+    function_map = {
+        "get_files_info": get_files_info,
+        "get_file_content": get_file_content,
+        "run_python_file": run_python_file,
+        "write_file": write_file,
+    }
+
+    max_iterations = 20
+    for _ in range(max_iterations):
+        if not response.function_calls:
+            print(response.text)
+            break
+
         for function_call_part in response.function_calls:
             print(f"Calling function: {function_call_part.name}({function_call_part.args})")
-    else:
-        print(response.text)
+            function = function_map.get(function_call_part.name)
+            if function is None:
+                print(f"Unknown function: {function_call_part.name}")
+                continue
+            try:
+                result = function(".", **function_call_part.args)
+            except Exception as e:
+                result = f"Error: {e}"
+            print(result)
+            messages.append(response.candidates[0].content)
+            messages.append(
+                types.Content(
+                    role="user",
+                    parts=[types.Part.from_function_response(
+                        name=function_call_part.name,
+                        response={"result": result},
+                    )],
+                )
+            )
+
+        response = client.models.generate_content(
+            model="gemini-3.5-flash-lite",
+            contents=messages,
+            config=config,
+        )
 
     
 
