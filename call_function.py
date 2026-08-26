@@ -83,6 +83,6 @@ def _build_response(tool_call, name: str, result: str) -> types.Content:
         )
     ]
     return types.Content(
-        role="tool" if _get_tool_call_id(tool_call) else "user",
+        role="user" if _get_tool_call_id(tool_call) else "user",
         parts=parts,
     )
