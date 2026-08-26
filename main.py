@@ -19,9 +19,9 @@ def main():
     When a user asks a question or makes a request, make a function call plan. You can perform the following operations:
 
     - List files and directories
-    - Read file contents
-    - Execute Python files
-    - Write or overwrite files
+    - Read content to a file
+    - Write to a file (Read or Update)
+    - Run a python file with optimal Arguments
 
     All paths you provide should be relative to the working directory. You do not need to specify the working directory in your function calls as it is automatically injected for security reasons.
     """
@@ -74,39 +74,17 @@ def main():
         "write_file": write_file,
     }
 
-    max_iterations = 20
-    for _ in range(max_iterations):
-        if not response.function_calls:
-            print(response.text)
-            break
-
+    if response.function_calls:
         for function_call_part in response.function_calls:
             print(f"Calling function: {function_call_part.name}({function_call_part.args})")
             function = function_map.get(function_call_part.name)
             if function is None:
                 print(f"Unknown function: {function_call_part.name}")
                 continue
-            try:
-                result = function(".", **function_call_part.args)
-            except Exception as e:
-                result = f"Error: {e}"
+            result = function(".", **function_call_part.args)
             print(result)
-            messages.append(response.candidates[0].content)
-            messages.append(
-                types.Content(
-                    role="user",
-                    parts=[types.Part.from_function_response(
-                        name=function_call_part.name,
-                        response={"result": result},
-                    )],
-                )
-            )
-
-        response = client.models.generate_content(
-            model="gemini-3.5-flash-lite",
-            contents=messages,
-            config=config,
-        )
+    else:
+        print(response.text)
 
     
 

@@ -2,3 +2,4 @@ BogAgent.code-workspace
 .venv
 .env
 .DS_Store
+__pycache__
