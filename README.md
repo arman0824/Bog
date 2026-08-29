@@ -56,9 +56,9 @@ uv run main.py "your prompt here" --verbose
 
 ## Try It: End-to-End Agent Workflow
 
-The `runtime_test/` folder contains a `calculator` subfolder with a small sample program you can use to see the full agent loop in action.
+The `test_agent/` folder contains a `calculator` subfolder with a small sample program you can use to see the full agent loop in action.
 
-1. Open one of the files in `runtime_test/calculator/` and break the code.
+1. Open one of the files in `test_agent/calculator/` and break the code.
 2. Run the agent and let it diagnose and fix the issue:
 
    ```
