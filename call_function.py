@@ -9,7 +9,7 @@ from functions.run_python_file import run_python_file
 from functions.write_file import write_file
 
 
-WORKING_DIRECTORY = "./calculator"
+WORKING_DIRECTORY = "."
 
 
 function_map: dict[str, Callable[..., str]] = {
