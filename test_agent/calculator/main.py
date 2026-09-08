@@ -1,8 +1,13 @@
 # calculator/main.py
 
 import sys
-from runtime_tests.calculator.pkg.calculator import Calculator
-from runtime_tests.calculator.pkg.render import format_json_output
+import os
+
+# Add the parent directory of test_agent to sys.path so absolute imports work regardless of execution location
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+
+from test_agent.calculator.pkg.calculator import Calculator
+from test_agent.calculator.pkg.render import format_json_output
 
 
 def main() -> None:
